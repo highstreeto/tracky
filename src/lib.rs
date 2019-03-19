@@ -108,7 +108,7 @@ impl Manager {
                 println!("Available commands:");
                 println!("  add                            Add ... to track");
                 println!("    project <name>               Add a new project");
-                println!("    entry <project> <activity>   Add a new entry starting now");
+                println!("    entry <project> <activity>   Add a new entry starting now ☕");
                 println!(
                     "  finish <project> [activity]    Finish activity of project or last acidity"
                 );
@@ -201,8 +201,8 @@ impl Entry {
 impl fmt::Display for Entry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.duration {
-            Some(duration) => write!(f, "{} took {}s", self.activity.green(), duration.as_secs()),
-            None => write!(f, "{}", self.activity.yellow()),
+            Some(duration) => write!(f, "{} ⚡  took {}s", self.activity.green(), duration.as_secs()),
+            None => write!(f, "{} ☕ ", self.activity.yellow()),
         }
     }
 }

@@ -6,7 +6,7 @@ use std::io::{self, Write};
 
 fn main() {
     let command_prefix = "> ";
-    let error_prefix = "error:".red().bold();
+    let error_prefix = "⛔  error:".red().bold();
     let mut manager = Manager::new();
     println!("Hello and Welcome to {}!", "Tracky".blue().bold());
 
