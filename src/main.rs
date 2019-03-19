@@ -1,12 +1,12 @@
 extern crate colored;
 
 use colored::*;
+use tracky::*;
 use std::io::{self, Write};
 
 fn main() {
     let command_prefix = "> ";
     let error_prefix = "error:".red().bold();
-
     println!("Hello and Welcome to {}!", "Tracky".blue().bold());
 
     loop {
@@ -32,23 +32,5 @@ fn main() {
             }
             Err(msg) => println!("{} {}", error_prefix, msg),
         }
-    }
-}
-
-enum REPLAction {
-    Continue,
-    Quit,
-}
-
-fn handle_command(cmd: &str) -> Result<REPLAction, String> {
-    match cmd {
-        "help" => {
-            println!("Available commands:");
-            println!("  help    Displays this help text");
-            println!("  quit    To quit Tracky");
-            Ok(REPLAction::Continue)
-        }
-        "quit" => Ok(REPLAction::Quit),
-        _ => Err(format!("Unknwon command '{}'!", cmd)),
     }
 }
