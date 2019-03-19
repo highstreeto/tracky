@@ -57,7 +57,7 @@ impl Manager {
                 Ok(REPLAction::Continue)
             }
             "quit" => Ok(REPLAction::Quit),
-            _ => Err(format!("Unknwon command '{}'!", cmd)),
+            _ => Err(format!("Unknown command '{}'!", cmd)),
         }
     }
 }
