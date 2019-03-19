@@ -1,3 +1,4 @@
+use colored::*;
 use std::time;
 
 pub enum REPLAction {
@@ -27,7 +28,10 @@ impl Manager {
 
     pub fn handle(&mut self, line: &str) -> Result<REPLAction, String> {
         let mut args = line.split_whitespace();
-        let cmd = args.next().ok_or("Enter a command - use help for a list of commands")?;
+        let cmd = args.next().ok_or(format!(
+            "Enter a command - use {} for a list of commands",
+            "help".bold()
+        ))?;
 
         match cmd {
             "add" => {
@@ -44,7 +48,7 @@ impl Manager {
                         println!(" - {}", project);
                     }
                 } else {
-                    println!("No projects found - use add to change this!");
+                    println!("No projects found - use {} to change this!", "add".bold());
                 }
                 Ok(REPLAction::Continue)
             }
@@ -53,10 +57,10 @@ impl Manager {
                 println!("  add <name>    Add a new project");
                 println!("  list          List all projects");
                 println!("  help          Displays this help text");
-                println!("  quit          To quit Tracky");
+                println!("  quit / exit   Quit Tracky");
                 Ok(REPLAction::Continue)
             }
-            "quit" => Ok(REPLAction::Quit),
+            "quit" | "exit" => Ok(REPLAction::Quit),
             _ => Err(format!("Unknown command '{}'!", cmd)),
         }
     }
