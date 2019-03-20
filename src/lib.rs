@@ -1,4 +1,5 @@
 use colored::*;
+use serde::{Serialize, Deserialize};
 use std::fmt;
 use std::time;
 
@@ -7,13 +8,14 @@ pub enum REPLAction {
     Quit,
 }
 
-pub struct Manager {
+#[derive(Serialize, Deserialize)]
+pub struct TimeTracker {
     projects: Vec<Project>,
 }
 
-impl Manager {
-    pub fn new() -> Manager {
-        Manager { projects: vec![] }
+impl TimeTracker {
+    pub fn new() -> TimeTracker {
+        TimeTracker { projects: vec![] }
     }
 
     fn add_project(&mut self, project: Project) {
@@ -104,6 +106,11 @@ impl Manager {
                 }
                 Ok(REPLAction::Continue)
             }
+            "save" => {
+                let json = serde_json::to_string(self).map_err(|err| err.to_string())?;
+                println!("{}", json);
+                Ok(REPLAction::Continue)
+            }
             "help" => {
                 println!("Available commands:");
                 println!("  add                            Add ... to track");
@@ -123,6 +130,7 @@ impl Manager {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Project {
     name: String,
     tasks: Vec<Task>,
@@ -183,6 +191,7 @@ impl fmt::Display for Project {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Task {
     activity: String,
     start: time::SystemTime,
