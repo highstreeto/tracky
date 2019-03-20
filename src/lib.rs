@@ -43,13 +43,13 @@ impl Manager {
                     self.add_project(project);
                     Ok(REPLAction::Continue)
                 }
-                Some("entry") => {
+                Some("task") => {
                     let project = args.next().ok_or("Project name needed!")?;
                     let activity = args.next().ok_or("New entry activity needed!")?;
                     let project = self
                         .find_project_mut(project)
                         .ok_or(format!("Project {} not known!", project))?;
-                    let entry = Entry::new(activity);
+                    let entry = Task::new(activity);
                     println!(
                         "Added and started new entry {} on project {}",
                         entry, project
@@ -68,7 +68,7 @@ impl Manager {
                             .find_project_mut(project)
                             .ok_or(format!("Project {} not known!", project))?;
                         println!("Entries for project {}", project.name());
-                        for entry in project.entries() {
+                        for entry in project.tasks() {
                             println!(" - {}", entry);
                         }
                     }
@@ -93,11 +93,11 @@ impl Manager {
                             .find_project_mut(project)
                             .ok_or(format!("Project {} not known!", project))?;
                         if let Some(activity) = args.next() {
-                            println!("TODO: Not implemented yet.");
+                            let task = project.finish(activity).ok_or("No tasks to finish!")?;
+                            println!("Finished {}", task);
                         } else {
-                            if let Some(latest) = project.finish_last() {
-                                println!("Finished {}", latest);
-                            }
+                            let latest = project.finish_last().ok_or("No tasks to finish!")?;
+                            println!("Finished {}", latest);
                         }
                     }
                     None => Err("Project name needed!")?,
@@ -108,7 +108,7 @@ impl Manager {
                 println!("Available commands:");
                 println!("  add                            Add ... to track");
                 println!("    project <name>               Add a new project");
-                println!("    entry <project> <activity>   Add a new entry starting now ☕");
+                println!("    task <project> <activity>   Add a new task starting now ☕");
                 println!(
                     "  finish <project> [activity]    Finish activity of project or last acidity"
                 );
@@ -125,14 +125,14 @@ impl Manager {
 
 pub struct Project {
     name: String,
-    entries: Vec<Entry>,
+    tasks: Vec<Task>,
 }
 
 impl Project {
     fn new(name: &str) -> Project {
         Project {
             name: String::from(name),
-            entries: vec![],
+            tasks: vec![],
         }
     }
 
@@ -140,25 +140,39 @@ impl Project {
         &self.name
     }
 
-    fn entries(&self) -> &Vec<Entry> {
-        &self.entries
+    fn tasks(&self) -> &Vec<Task> {
+        &self.tasks
     }
 
     fn rename(&mut self, new_name: &str) {
         self.name = String::from(new_name);
     }
 
-    fn add_entry(&mut self, entry: Entry) {
-        self.entries.push(entry);
+    fn add_entry(&mut self, entry: Task) {
+        self.tasks.push(entry);
     }
 
-    fn finish_last(&mut self) -> Option<&Entry> {
-        match self.entries.last_mut() {
+    fn finish(&mut self, activity: &str) -> Option<&Task> {
+        let task = self.tasks
+            .iter_mut()
+            .filter(|task| task.activity == activity)
+            .next();
+        match task {
             Some(entry) => {
                 entry.finish();
                 Some(entry)
             }
-            None => None
+            None => None,
+        }
+    }
+
+    fn finish_last(&mut self) -> Option<&Task> {
+        match self.tasks.last_mut() {
+            Some(entry) => {
+                entry.finish();
+                Some(entry)
+            }
+            None => None,
         }
     }
 }
@@ -169,16 +183,16 @@ impl fmt::Display for Project {
     }
 }
 
-pub struct Entry {
+pub struct Task {
     activity: String,
     start: time::SystemTime,
     end: Option<time::SystemTime>,
     duration: Option<time::Duration>,
 }
 
-impl Entry {
-    fn new(activity: &str) -> Entry {
-        Entry {
+impl Task {
+    fn new(activity: &str) -> Task {
+        Task {
             activity: String::from(activity),
             start: time::SystemTime::now(),
             end: None,
@@ -198,10 +212,15 @@ impl Entry {
     }
 }
 
-impl fmt::Display for Entry {
+impl fmt::Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.duration {
-            Some(duration) => write!(f, "{} ⚡  took {}s", self.activity.green(), duration.as_secs()),
+            Some(duration) => write!(
+                f,
+                "{} ⚡  took {}s",
+                self.activity.green(),
+                duration.as_secs()
+            ),
             None => write!(f, "{} ☕ ", self.activity.yellow()),
         }
     }
