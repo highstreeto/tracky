@@ -1,7 +1,11 @@
 use colored::*;
-use serde::{Serialize, Deserialize};
-use std::fmt;
-use std::time;
+use serde::{Deserialize, Serialize};
+use std::{
+    fmt, fs,
+    io::prelude::*,
+    path::PathBuf,
+    time,
+};
 
 pub enum REPLAction {
     Continue,
@@ -16,6 +20,26 @@ pub struct TimeTracker {
 impl TimeTracker {
     pub fn new() -> TimeTracker {
         TimeTracker { projects: vec![] }
+    }
+
+    fn default_path() -> PathBuf {
+        if let Some(mut file) = dirs::home_dir() {
+            file.push("tracky.json");
+            file
+        } else {
+            PathBuf::from("tracky.json")
+        }
+    }
+
+    pub fn load() -> Result<TimeTracker, String> {
+        let path = TimeTracker::default_path();
+        let mut file = fs::File::open(&path).map_err(|err| err.to_string())?;
+        println!("  Loading from {}...", path.to_str().expect("Not a valid Unicode path!"));
+
+        let mut json = String::new();
+        file.read_to_string(&mut json)
+            .map_err(|err| err.to_string())?;
+        Ok(serde_json::from_str(&json).map_err(|err| err.to_string())?)
     }
 
     fn add_project(&mut self, project: Project) {
@@ -85,7 +109,6 @@ impl TimeTracker {
                         }
                     }
                 }
-
                 Ok(REPLAction::Continue)
             }
             "finish" => {
@@ -107,8 +130,7 @@ impl TimeTracker {
                 Ok(REPLAction::Continue)
             }
             "save" => {
-                let json = serde_json::to_string(self).map_err(|err| err.to_string())?;
-                println!("{}", json);
+                self.save()?;
                 Ok(REPLAction::Continue)
             }
             "help" => {
@@ -127,6 +149,16 @@ impl TimeTracker {
             "quit" | "exit" => Ok(REPLAction::Quit),
             _ => Err(format!("Unknown command '{}'!", cmd)),
         }
+    }
+
+    fn save(&self) -> Result<(), String> {
+        let path = TimeTracker::default_path();
+
+        let json = serde_json::to_string(self).map_err(|err| err.to_string())?;
+        let mut file = fs::File::create(&path).map_err(|err| err.to_string())?;
+        file.write_all(json.as_bytes())
+            .map_err(|err| err.to_string())?;
+        Ok(())
     }
 }
 
@@ -161,7 +193,8 @@ impl Project {
     }
 
     fn finish(&mut self, activity: &str) -> Option<&Task> {
-        let task = self.tasks
+        let task = self
+            .tasks
             .iter_mut()
             .filter(|task| task.activity == activity)
             .next();
