@@ -78,7 +78,7 @@ impl TimeTracker {
                         "Added and started new entry {} on project {}",
                         entry, project
                     );
-                    project.add_entry(entry);
+                    project.add_task(entry);
 
                     Ok(REPLAction::Continue)
                 }
@@ -138,10 +138,9 @@ impl TimeTracker {
                         .map_err(|err| err.to_string())?
                         .iter()
                         .last()
-                        .expect("No last path elemeent")
+                        .expect("No last path element")
                         .to_str()
-                        .expect("No unicode path!")
-                        // TODO: Use CamelCase for str
+                        .expect("No unicode path!") // TODO: Use CamelCase for str
                 );
 
                 println!("Available commands:");
@@ -182,7 +181,7 @@ impl Project {
     fn new(name: &str) -> Project {
         Project {
             name: String::from(name),
-            tasks: vec![],
+            tasks: vec![]
         }
     }
 
@@ -190,15 +189,15 @@ impl Project {
         &self.name
     }
 
-    fn tasks(&self) -> &Vec<Task> {
-        &self.tasks
+    fn tasks(&self) -> impl Iterator<Item = &Task> {
+        self.tasks.iter()
     }
 
     fn rename(&mut self, new_name: &str) {
         self.name = String::from(new_name);
     }
 
-    fn add_entry(&mut self, entry: Task) {
+    fn add_task(&mut self, entry: Task) {
         self.tasks.push(entry);
     }
 
@@ -240,13 +239,6 @@ pub struct Task {
     start: time::SystemTime,
     end: Option<time::SystemTime>,
     duration: Option<time::Duration>,
-}
-
-pub struct FinishedTask {
-    activity: String,
-    start: time::SystemTime,
-    end: time::SystemTime,
-    duration: time::Duration,
 }
 
 impl Task {
