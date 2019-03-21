@@ -1,11 +1,6 @@
 use colored::*;
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt, fs,
-    io::prelude::*,
-    path::PathBuf,
-    time,
-};
+use std::{env, fmt, fs, io::prelude::*, path::PathBuf, time};
 
 pub enum REPLAction {
     Continue,
@@ -34,7 +29,10 @@ impl TimeTracker {
     pub fn load() -> Result<TimeTracker, String> {
         let path = TimeTracker::default_path();
         let mut file = fs::File::open(&path).map_err(|err| err.to_string())?;
-        println!("  Loading from {}...", path.to_str().expect("Not a valid Unicode path!"));
+        println!(
+            "  Loading from {}...",
+            path.to_str().expect("Not a valid Unicode path!")
+        );
 
         let mut json = String::new();
         file.read_to_string(&mut json)
@@ -134,6 +132,18 @@ impl TimeTracker {
                 Ok(REPLAction::Continue)
             }
             "help" => {
+                println!(
+                    "current dir: {}",
+                    env::current_dir()
+                        .map_err(|err| err.to_string())?
+                        .iter()
+                        .last()
+                        .expect("No last path elemeent")
+                        .to_str()
+                        .expect("No unicode path!")
+                        // TODO: Use CamelCase for str
+                );
+
                 println!("Available commands:");
                 println!("  add                            Add ... to track");
                 println!("    project <name>               Add a new project");
@@ -230,6 +240,13 @@ pub struct Task {
     start: time::SystemTime,
     end: Option<time::SystemTime>,
     duration: Option<time::Duration>,
+}
+
+pub struct FinishedTask {
+    activity: String,
+    start: time::SystemTime,
+    end: time::SystemTime,
+    duration: time::Duration,
 }
 
 impl Task {
