@@ -3,13 +3,13 @@ extern crate dirs;
 
 use colored::*;
 use std::io::{self, Write};
-use tracky::*;
+use tracky::{REPLAction, handle_repl, tracker::TimeTracker};
 
 fn main() {
     let command_prefix = "> ";
     let error_prefix = "⛔  error:".red().bold();
     println!("Hello and Welcome to {}!", "Tracky".blue().bold());
-    let mut manager = TimeTracker::load().unwrap_or(TimeTracker::new());
+    let mut tracker = TimeTracker::load().unwrap_or(TimeTracker::new());
 
     loop {
         let mut command = String::new();
@@ -25,7 +25,7 @@ fn main() {
             }
         };
 
-        match manager.handle(line) {
+        match handle_repl(&mut tracker, line) {
             Ok(REPLAction::Continue) => {}
             Ok(REPLAction::Quit) => {
                 println!("Bye!");
