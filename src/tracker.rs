@@ -2,14 +2,14 @@ use colored::*;
 use serde::{Deserialize, Serialize};
 use std::{fmt, fs, io::prelude::*, path::PathBuf, time};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct TimeTracker {
     projects: Vec<Project>,
 }
 
 impl TimeTracker {
     pub fn new() -> TimeTracker {
-        TimeTracker { projects: vec![] }
+        Default::default()
     }
 
     fn default_path() -> PathBuf {
@@ -46,8 +46,7 @@ impl TimeTracker {
     pub fn find_project_mut(&mut self, name: &str) -> Option<&mut Project> {
         self.projects
             .iter_mut()
-            .filter(|proj| proj.name() == name)
-            .next()
+            .find(|proj| proj.name() == name)
     }
 
     pub fn save(&self) -> Result<(), String> {
@@ -83,10 +82,6 @@ impl Project {
         self.tasks.iter()
     }
 
-    fn rename(&mut self, new_name: &str) {
-        self.name = String::from(new_name);
-    }
-
     pub fn add_task(&mut self, entry: Task) {
         self.tasks.push(entry);
     }
@@ -95,8 +90,7 @@ impl Project {
         let task = self
             .tasks
             .iter_mut()
-            .filter(|task| task.activity == activity)
-            .next();
+            .find(|task| task.activity == activity);
         match task {
             Some(entry) => {
                 entry.finish();
