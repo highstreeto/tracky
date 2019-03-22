@@ -4,6 +4,7 @@ use colored::*;
 use std::env;
 use tracker::{Project, Task, TimeTracker};
 
+#[derive(Debug, PartialEq)]
 pub enum REPLAction {
     Continue,
     Quit,
@@ -118,5 +119,78 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
             Ok(REPLAction::Quit)
         }
         _ => Err(format!("Unknown command '{}'!", cmd)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn help() {
+        let mut tracker = TimeTracker::new();
+
+        let action = handle_repl(&mut tracker, "help").unwrap();
+        assert_eq!(REPLAction::Continue, action);
+    }
+
+    #[test]
+    fn list() {
+        let mut tracker = TimeTracker::new();
+
+        let action = handle_repl(&mut tracker, "list").unwrap();
+        assert_eq!(REPLAction::Continue, action);
+    }
+
+    #[test]
+    fn list_tasks() {
+        let mut tracker = TimeTracker::new();
+
+        assert_eq!(
+            "Project Test not known!",
+            handle_repl(&mut tracker, "list Test").unwrap_err()
+        );
+
+        tracker.add_project(Project::new("Test"));
+
+        let action = handle_repl(&mut tracker, "list Test").unwrap();
+        assert_eq!(REPLAction::Continue, action);
+    }
+
+    #[test]
+    fn list_tasks_unknown_project() {
+        let mut tracker = TimeTracker::new();
+        assert_eq!(
+            "Project Test not known!",
+            handle_repl(&mut tracker, "list Test").unwrap_err()
+        );
+    }
+
+    #[test]
+    fn unknown_cmd() {
+        let mut tracker = TimeTracker::new();
+        assert_eq!(
+            "Unknown command 'unknown'!",
+            handle_repl(&mut tracker, "unknown").unwrap_err()
+        );
+    }
+
+    #[test]
+    fn empty_cmd() {
+        let mut tracker = TimeTracker::new();
+        assert_eq!(
+            format!(
+                "Enter a command - use {} for a list of commands",
+                "help".bold()
+            ),
+            handle_repl(&mut tracker, "").unwrap_err()
+        );
+    }
+
+    #[test]
+    fn quit_and_exit() {
+        let mut tracker = TimeTracker::new();
+        assert_eq!(REPLAction::Quit, handle_repl(&mut tracker, "quit").unwrap());
+        assert_eq!(REPLAction::Quit, handle_repl(&mut tracker, "exit").unwrap());
     }
 }
