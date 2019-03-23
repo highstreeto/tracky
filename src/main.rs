@@ -9,7 +9,10 @@ fn main() {
     let command_prefix = "> ";
     let error_prefix = "⛔  error:".red().bold();
     println!("Hello and Welcome to {}!", "Tracky".blue().bold());
-    let mut tracker = TimeTracker::load().unwrap_or_else(|_| TimeTracker::new());
+    let mut tracker = TimeTracker::load().unwrap_or_else(|_| {
+        println!(" Creating empty tracker");
+        TimeTracker::new()
+    });
 
     loop {
         let mut command = String::new();

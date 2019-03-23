@@ -1,8 +1,7 @@
 pub mod tracker;
 
 use colored::*;
-use std::env;
-use tracker::{Project, Task, TimeTracker};
+use tracker::{Project, TimeTracker};
 
 #[derive(Debug, PartialEq)]
 pub enum REPLAction {
@@ -34,12 +33,11 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
                 let project = tracker
                     .find_project_mut(project)
                     .ok_or_else(|| format!("Project {} not known!", project))?;
-                let entry = Task::new(activity);
+                let entry = project.start_task(activity);
                 println!(
-                    "Added and started new entry {} on project {}",
-                    entry, project
+                    "Started task {}",
+                    entry
                 );
-                project.add_task(entry);
 
                 Ok(REPLAction::Continue)
             }
@@ -52,9 +50,9 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
                     let project = tracker
                         .find_project_mut(project)
                         .ok_or_else(|| format!("Project {} not known!", project))?;
-                    println!("Entries for project {}", project);
-                    for entry in project.tasks() {
-                        println!(" - {}", entry);
+                    println!("Tasks for project {}", project);
+                    for task in project.all_tasks() {
+                        println!(" - {}", task);
                     }
                 }
                 None => {
@@ -77,10 +75,10 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
                         .find_project_mut(project)
                         .ok_or_else(|| format!("Project {} not known!", project))?;
                     if let Some(activity) = args.next() {
-                        let task = project.finish(activity).ok_or("No tasks to finish!")?;
+                        let task = project.finish_task(activity).ok_or("No tasks to finish!")?;
                         println!("Finished {}", task);
                     } else {
-                        let latest = project.finish_last().ok_or("No tasks to finish!")?;
+                        let latest = project.finish_last_task().ok_or("No tasks to finish!")?;
                         println!("Finished {}", latest);
                     }
                 }
@@ -93,22 +91,22 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
             Ok(REPLAction::Continue)
         }
         "help" => {
-            println!(
-                "current dir: {}",
-                env::current_dir()
-                    .map_err(|err| err.to_string())?
-                    .iter()
-                    .last()
-                    .expect("No last path element")
-                    .to_str()
-                    .expect("No unicode path!") // TODO: Use CamelCase for str
-            );
+            // println!(
+            //     "current dir: {}",
+            //     env::current_dir()
+            //         .map_err(|err| err.to_string())?
+            //         .iter()
+            //         .last()
+            //         .expect("No last path element")
+            //         .to_str()
+            //         .expect("No unicode path!") // TODO: Use CamelCase for str
+            // );
 
             println!("Available commands:");
             println!("  add                            Add ... to track");
             println!("    project <name>               Add a new project");
-            println!("    task <project> <activity>   Add a new task starting now ☕");
-            println!("  finish <project> [activity]    Finish activity of project or last acidity");
+            println!("    task <project> <activity>    Add a new task starting now ☕");
+            println!("  finish <project> [activity]    Finish activity of project or last activity");
             println!("  list                           List all projects");
             println!("  help                           Displays this help text");
             println!("  quit / exit                    Quit Tracky");

@@ -44,9 +44,7 @@ impl TimeTracker {
     }
 
     pub fn find_project_mut(&mut self, name: &str) -> Option<&mut Project> {
-        self.projects
-            .iter_mut()
-            .find(|proj| proj.name() == name)
+        self.projects.iter_mut().find(|proj| proj.name() == name)
     }
 
     pub fn save(&self) -> Result<(), String> {
@@ -63,14 +61,16 @@ impl TimeTracker {
 #[derive(Serialize, Deserialize)]
 pub struct Project {
     name: String,
-    tasks: Vec<Task>,
+    started: Vec<StartedTask>,
+    finished: Vec<FinishedTask>,
 }
 
 impl Project {
     pub fn new(name: &str) -> Project {
         Project {
             name: String::from(name),
-            tasks: vec![]
+            started: vec![],
+            finished: vec![],
         }
     }
 
@@ -78,36 +78,52 @@ impl Project {
         &self.name
     }
 
-    pub fn tasks(&self) -> impl Iterator<Item = &Task> {
-        self.tasks.iter()
+    pub fn all_tasks(&self) -> impl Iterator<Item = &fmt::Display> {
+        self.started
+            .iter()
+            .map(|task| task as &fmt::Display)
+            .chain(self.finished.iter().map(|task| task as &fmt::Display))
     }
 
-    pub fn add_task(&mut self, entry: Task) {
-        self.tasks.push(entry);
+    pub fn start_task(&mut self, activity: &str) -> &StartedTask {
+        let task = StartedTask {
+            activity: String::from(activity),
+            start: time::SystemTime::now(),
+        };
+        self.started.push(task);
+        self.started.last().unwrap()
     }
 
-    pub fn finish(&mut self, activity: &str) -> Option<&Task> {
-        let task = self
-            .tasks
-            .iter_mut()
-            .find(|task| task.activity == activity);
-        match task {
-            Some(entry) => {
-                entry.finish();
-                Some(entry)
+    pub fn finish_task(&mut self, activity: &str) -> Option<&FinishedTask> {
+        let entry = self
+            .started
+            .iter()
+            .enumerate()
+            .find(|(_, task)| task.activity == activity);
+        match entry {
+            Some((idx, _)) => {
+                let task = self.started.remove(idx);
+                let task = task.finish();
+                self.finished.push(task);
+                Some(self.finished.last().unwrap())
             }
             None => None,
         }
     }
 
-    pub fn finish_last(&mut self) -> Option<&Task> {
-        match self.tasks.last_mut() {
-            Some(entry) => {
-                entry.finish();
-                Some(entry)
-            }
-            None => None,
+    pub fn finish_last_task(&mut self) -> Option<&FinishedTask> {
+        if !self.started.is_empty() {
+            Some(self.finish_task_at(self.started.len() - 1))
+        } else {
+            None
         }
+    }
+
+    fn finish_task_at(&mut self, idx: usize) -> &FinishedTask {
+        let task = self.started.remove(idx);
+        let task = task.finish();
+        self.finished.push(task);
+        self.finished.last().unwrap()
     }
 }
 
@@ -118,45 +134,62 @@ impl fmt::Display for Project {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Task {
+pub struct StartedTask {
     activity: String,
     start: time::SystemTime,
-    end: Option<time::SystemTime>,
-    duration: Option<time::Duration>,
 }
 
-impl Task {
-    pub fn new(activity: &str) -> Task {
-        Task {
-            activity: String::from(activity),
+#[derive(Serialize, Deserialize)]
+pub struct FinishedTask {
+    activity: String,
+    start: time::SystemTime,
+    end: time::SystemTime,
+    duration: time::Duration,
+}
+
+impl StartedTask {
+    pub fn new(activity: &str) -> StartedTask {
+        let activity = String::from(activity);
+        StartedTask {
+            activity,
             start: time::SystemTime::now(),
-            end: None,
-            duration: None,
         }
     }
 
-    pub fn finish(&mut self) {
-        if self.end.is_none() {
-            let end = time::SystemTime::now();
-            self.duration = Some(
-                end.duration_since(self.start)
-                    .unwrap_or(time::Duration::from_secs(1)), // TODO: Not the best solution
-            );
-            self.end = Some(end);
+    fn finish(self) -> FinishedTask {
+        FinishedTask::new(self)
+    }
+}
+
+impl fmt::Display for StartedTask {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} ☕ ", self.activity.yellow())
+    }
+}
+
+impl FinishedTask {
+    fn new(task: StartedTask) -> FinishedTask {
+        let end = time::SystemTime::now();
+        let duration = end
+            .duration_since(task.start)
+            .unwrap_or(time::Duration::from_secs(1)); // TODO: Not the best solution
+
+        FinishedTask {
+            activity: task.activity,
+            start: task.start,
+            end,
+            duration,
         }
     }
 }
 
-impl fmt::Display for Task {
+impl fmt::Display for FinishedTask {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.duration {
-            Some(duration) => write!(
-                f,
-                "{} ⚡  took {}s",
-                self.activity.green(),
-                duration.as_secs()
-            ),
-            None => write!(f, "{} ☕ ", self.activity.yellow()),
-        }
+        write!(
+            f,
+            "{} ⚡  took {}s",
+            self.activity.green(),
+            self.duration.as_secs()
+        )
     }
 }
