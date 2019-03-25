@@ -1,7 +1,5 @@
-pub mod tracker;
-
 use colored::*;
-use tracker::{Project, TimeTracker};
+use tracky::{project::{Project, Task, TaskState}, TimeTracker};
 
 #[derive(Debug, PartialEq)]
 pub enum REPLAction {
@@ -23,7 +21,7 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
             Some("project") => {
                 let name = args.next().ok_or("New project name required!")?;
                 let project = Project::new(name);
-                println!("Added new project {}", project);
+                // println!("Added new project {}", project);
                 tracker.add_project(project);
                 Ok(REPLAction::Continue)
             }
@@ -33,11 +31,8 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
                 let project = tracker
                     .find_project_mut(project)
                     .ok_or_else(|| format!("Project {} not known!", project))?;
-                let entry = project.start_task(activity);
-                println!(
-                    "Started task {}",
-                    entry
-                );
+                let task = project.start_task(activity);
+                println!("Started task {}", format_task(task));
 
                 Ok(REPLAction::Continue)
             }
@@ -50,16 +45,16 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
                     let project = tracker
                         .find_project_mut(project)
                         .ok_or_else(|| format!("Project {} not known!", project))?;
-                    println!("Tasks for project {}", project);
+                    println!("Tasks for project {}", project.name());
                     for task in project.all_tasks() {
-                        println!(" - {}", task);
+                        println!(" - {}", format_task(task));
                     }
                 }
                 None => {
                     if tracker.projects().next().is_some() {
                         println!("All projects:");
                         for project in tracker.projects() {
-                            println!(" - {}", project);
+                            println!(" - {}", project.name());
                         }
                     } else {
                         println!("No projects found - use {} to change this!", "add".bold());
@@ -76,32 +71,17 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
                         .ok_or_else(|| format!("Project {} not known!", project))?;
                     if let Some(activity) = args.next() {
                         let task = project.finish_task(activity).ok_or("No tasks to finish!")?;
-                        println!("Finished {}", task);
+                        println!("Finished {}", format_task(task));
                     } else {
                         let latest = project.finish_last_task().ok_or("No tasks to finish!")?;
-                        println!("Finished {}", latest);
+                        println!("Finished {}", format_task(latest));
                     }
                 }
                 None => Err("Project name needed!")?,
             }
             Ok(REPLAction::Continue)
         }
-        "save" => {
-            tracker.save()?;
-            Ok(REPLAction::Continue)
-        }
         "help" => {
-            // println!(
-            //     "current dir: {}",
-            //     env::current_dir()
-            //         .map_err(|err| err.to_string())?
-            //         .iter()
-            //         .last()
-            //         .expect("No last path element")
-            //         .to_str()
-            //         .expect("No unicode path!") // TODO: Use CamelCase for str
-            // );
-
             println!("Available commands:");
             println!("  add                            Add ... to track");
             println!("    project <name>               Add a new project");
@@ -109,14 +89,20 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
             println!("  finish <project> [activity]    Finish activity of project or last activity");
             println!("  list                           List all projects");
             println!("  help                           Displays this help text");
-            println!("  quit / exit                    Quit Tracky");
+            println!("  quit / exit                    Quit and save Tracky");
             Ok(REPLAction::Continue)
         }
         "quit" | "exit" => {
-            tracker.save()?; // TODO: User can't exit without saving
             Ok(REPLAction::Quit)
         }
         _ => Err(format!("Unknown command '{}'!", cmd)),
+    }
+}
+
+fn format_task(task: &Task) -> String {
+    match task.state() {
+        TaskState::Started => format!("{} ☕ ", task.activity().yellow()),
+        TaskState::Finished => format!("{} ⚡ ", task.activity().green())
     }
 }
 

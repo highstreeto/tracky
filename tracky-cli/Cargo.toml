@@ -1,0 +1,10 @@
+[package]
+name = "tracky-cli"
+version = "0.1.0"
+authors = ["Martin Hochstrasser <martin.hochstrasser@gmx.at>"]
+edition = "2018"
+
+[dependencies]
+colored = "1.7.0"
+dirs = "1.0.5"
+tracky = { path = "../tracky" }
