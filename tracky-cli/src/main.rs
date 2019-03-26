@@ -1,4 +1,7 @@
-use colored;
+extern crate colored;
+extern crate dirs;
+extern crate tracky;
+
 use colored::*;
 use std::{io, io::Write, path::PathBuf};
 use tracky::TimeTracker;

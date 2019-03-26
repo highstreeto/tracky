@@ -21,7 +21,7 @@ pub fn handle_repl(tracker: &mut TimeTracker, line: &str) -> Result<REPLAction, 
             Some("project") => {
                 let name = args.next().ok_or("New project name required!")?;
                 let project = Project::new(name);
-                // println!("Added new project {}", project);
+                println!("Added new project {}", project.name());
                 tracker.add_project(project);
                 Ok(REPLAction::Continue)
             }
