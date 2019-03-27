@@ -6,7 +6,7 @@ A simple time tracker implemented in Rust.
 
 This a sandbox project for me to get acquainted with Rust. Don't except any *fancy* features!
 
-## [WIP] Layout
+## Layout
 
 - `tracky`: Library for time tracking
 - `tracky-cli`: REPL client for tracky
